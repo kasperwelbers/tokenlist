@@ -5,27 +5,25 @@
 #'
 #' @param tokens
 #' @param query_regex
-#' @param aid_var
-#' @param term_i_var
-#' @param term_var
+#' @param text_var
 #' @param presorted
-#' @param article_filter
+#' @param default.window
 #'
 #' @return a sparse matrix
 #' @export
-getQueryMatrix <- function(tokens, query_regex, aid_var='aid', term_i_var='id', term_var='word', presorted=F, default.window=25){
+getQueryMatrix <- function(tokens, query_regex, text_var='word', presorted=F, default.window=25){
   if(!'window' %in% colnames(query_regex)) query_regex$window = default.window
   query_regex$window[is.na(query_regex$window)] = default.window
 
   if(!presorted){
     ## unless explicitly noted that the token list is sorted, first sort tokens by article id and word id. (keeps order to restore original order)
-    ord = order(tokens[,aid_var], tokens[,term_i_var])
+    ord = order(tokens$doc_id, tokens$position)
     tokens = tokens[ord,]
   }
 
-  m = getWindowMatrix(location=tokens[,term_i_var],
-                      context=tokens[,  aid_var],
-                      term = tokens[, term_var],
+  m = getWindowMatrix(location=tokens$position,
+                      context=tokens$doc_id,
+                      term = tokens[, text_var],
                       window.size = max(query_regex$window))
 
   ## create the rows and columns for the query matrix by looking in which rows one of the terms that matches the regex is TRUE.
@@ -39,9 +37,8 @@ getQueryMatrix <- function(tokens, query_regex, aid_var='aid', term_i_var='id', 
 
   qm = spMatrix(nrow(tokens), nrow(query_regex), qm$i, qm$j, rep(T, nrow(qm)))
   colnames(qm) = query_regex$term
-  #rownames(qm) = paste(tokens[,aid_var], tokens[,term_i_var], sep='.') # currently not used, and takes up space
 
-  if(!presorted) qm = qm[match(1:nrow(qm), ord),] # return matrix in order of input tokens
+  if(!presorted) qm = qm[match(1:nrow(qm), ord),,drop=F] # return matrix in order of input tokens
   qm
 }
 
@@ -65,12 +62,16 @@ stretchLocation <- function(location, context, window.size){
 
   if(min(location) == 0) location = location + 1 ## location will be treated as an index, so it cannot be zero in r where an index starts at 1 (and some parsers start indexing at zero)
 
-  newcontext = which(!duplicated(context)) # where does a new context start
-  context.max = location[newcontext-1] + (window.size*2)
-  multiplier_scores = cumsum(c(0,context.max)) # the amount that should be added to the location at the start of each context
-  repeat_multiplier = c(newcontext[2:length(newcontext)], length(location)+1) - newcontext # the number of times the multiplier scores need to be repeated to match the location vector
-  multiplier_vector = rep(multiplier_scores, repeat_multiplier)
-  return(location + multiplier_vector)
+  if(length(unique(context)) == 1){
+    return(location)
+  } else {
+    newcontext = which(!duplicated(context)) # where does a new context start
+    context.max = location[newcontext-1] + (window.size*2)
+    multiplier_scores = cumsum(c(0,context.max)) # the amount that should be added to the location at the start of each context
+    repeat_multiplier = c(newcontext[2:length(newcontext)], length(location)+1) - newcontext # the number of times the multiplier scores need to be repeated to match the location vector
+    multiplier_vector = rep(multiplier_scores, repeat_multiplier)
+    return(location + multiplier_vector)
+  }
 }
 
 locationMatrix <- function(i, j, shifts=0, count.once=T, distance.as.value=F){

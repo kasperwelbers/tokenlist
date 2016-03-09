@@ -4,11 +4,11 @@
 \alias{getQueryMatrix}
 \title{Creates a matrix where rows match the tokens, columns represent the queries in query_regex, and values represent the word distance to each query hit}
 \usage{
-getQueryMatrix(tokens, query_regex, aid_var = "aid", term_i_var = "id",
-  term_var = "word", presorted = F, default.window = 25)
+getQueryMatrix(tokens, query_regex, text_var = "word", presorted = F,
+  default.window = 25)
 }
 \arguments{
-\item{article_filter}{}
+\item{default.window}{}
 }
 \value{
 a sparse matrix

@@ -4,19 +4,14 @@
 \alias{kwic}
 \title{Get keyword-in-context from a token list}
 \usage{
-kwic(tokens, hits, nwords = 10, aid_var = "aid", term_i_var = "id",
-  term_var = "word", prettypaste = T)
+kwic(tokens, hits, nwords = 10, text_var = "word", prettypaste = T)
 }
 \arguments{
-\item{tokens}{a data frame of tokens containing columns for article id, term location and term string (column names can be specified in aid_var, term_i_var and term_var parameters, respectively).}
+\item{tokens}{a data frame of tokens containing columns for document id (doc_id), text position (position) and text string (column name can be specified in text_var, defaults to 'word').}
 
 \item{nwords}{the number of words in front and after the keyword}
 
-\item{aid_var}{a character string giving the name of the article id column}
-
-\item{term_i_var}{a character string giving the name of the term location column}
-
-\item{term_var}{a character string giving the name of the term string column}
+\item{text_var}{a character string giving the name of the term string column}
 }
 \value{
 A data.frame with the keyword in context

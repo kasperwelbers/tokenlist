@@ -4,24 +4,20 @@
 \alias{codeTokens}
 \title{Annotate a data frame of tokens with codes using Lucene-like search queries}
 \usage{
-codeTokens(tokens, queries, default.window = 25, indicator_filter = rep(T,
-  nrow(tokens)), aid_var = "aid", term_i_var = "id", term_var = "word",
-  condition_once = FALSE, presorted = F)
+codeTokens(tokens, queries, text_var = "word", default.window = 25,
+  indicator_filter = rep(T, nrow(tokens)), condition_once = FALSE,
+  presorted = F)
 }
 \arguments{
-\item{tokens}{a data frame of tokens containing columns for article id, term location and term string (column names can be specified in aid_var, term_i_var and term_var parameters, respectively).}
+\item{tokens}{a data frame of tokens containing columns for document id (doc_id), text position (position) and text string (column name can be specified in text_var, defaults to 'word').}
 
 \item{queries}{a data frame containing the queries.}
 
-\item{aid_var}{a character string giving the name of the article id column}
-
-\item{term_i_var}{a character string giving the name of the term location column}
-
-\item{term_var}{a character string giving the name of the term string column}
+\item{text_var}{a character string giving the name of the term string column}
 
 \item{condition_once}{logical. If TRUE, then if an indicator satisfies its conditions once in an article, all indicators within that article are coded.}
 
-\item{presorted}{The data has to be sorted on order(aid_var, term_i_var). If this is already the case, presorted can be set to TRUE to save time (which is usefull when testing many individual queries for large tokenlists)}
+\item{presorted}{The data has to be sorted on order(doc_id, position). If this is already the case, presorted can be set to TRUE to save time (which is usefull when testing many individual queries for large tokenlists)}
 }
 \value{
 the annotated tokens data frame

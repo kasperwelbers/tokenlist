@@ -4,22 +4,22 @@
 \alias{searchQuery}
 \title{Search for tokens in a tokenlist using indicators with conditions}
 \usage{
-searchQuery(tokens, indicator, condition = "", default.window = 25,
-  condition_once = FALSE, presorted = T, indicator_filter = rep(T,
-  nrow(tokens)), aid_var = "aid", term_i_var = "id", term_var = "word",
-  hitcount = T, tokenfreq = F, keywordIC = F, ...)
+searchQuery(tokens, indicator, condition = "", text_var = "word",
+  default.window = 25, condition_once = FALSE, presorted = T,
+  indicator_filter = rep(T, nrow(tokens)), hitcount = T, tokenfreq = F,
+  keywordIC = F, ...)
 }
 \arguments{
 \item{condition_once}{logical. If TRUE, then if an indicator satisfies its conditions once in an article, all indicators within that article are coded.}
 
 \item{presorted}{The data has to be sorted on order(aid_var, term_i_var). If this is already the case, presorted can be set to TRUE to save time (which is usefull when testing many individual queries for large tokenlists)}
 
-\item{indicator_filter}{}
+\item{...}{}
 }
 \value{
 the tokens that match the query
 }
 \description{
-Tokens need to be sorted on order(aid_var, term_i_var), or presorted needs to be set to FALSE. Note that if this function is used often, its faster to sort tokens first and use presorted = TRUE.
+Tokens need to be sorted on order(doc_id, position), or presorted needs to be set to FALSE. Note that if this function is used often, its faster to sort tokens first and use presorted = TRUE.
 }
 
