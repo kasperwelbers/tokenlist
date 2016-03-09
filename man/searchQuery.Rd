@@ -5,9 +5,9 @@
 \title{Search for tokens in a tokenlist using indicators with conditions}
 \usage{
 searchQuery(tokens, indicator, condition = "", default.window = 25,
-  meta = NULL, condition_once = FALSE, presorted = T,
-  indicator_filter = rep(T, nrow(tokens)), aid_var = "aid",
-  term_i_var = "id", term_var = "word")
+  condition_once = FALSE, presorted = T, indicator_filter = rep(T,
+  nrow(tokens)), aid_var = "aid", term_i_var = "id", term_var = "word",
+  hitcount = T, tokenfreq = F, keywordIC = F, ...)
 }
 \arguments{
 \item{condition_once}{logical. If TRUE, then if an indicator satisfies its conditions once in an article, all indicators within that article are coded.}
