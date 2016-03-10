@@ -97,7 +97,7 @@ locationMatrix <- function(i, j, shifts=0, count.once=T, distance.as.value=F){
   mat
   length(i)
   nrow(mat)
-  mat = mat[i,]
+  mat = mat[i,,drop=F]
   mat = as(mat, 'dgCMatrix')
   if(count.once) mat@x[mat@x>0] = 1
   mat

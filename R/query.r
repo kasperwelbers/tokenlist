@@ -77,9 +77,12 @@ codeTokens <- function(tokens, queries, text_var='word', default.window=25, indi
   tokens_within_article_filter = tokenGrepl(query_regex$regex, tokens[article_filter,text_var])
   tokens_filter = article_filter[tokens_within_article_filter]
 
+  ## if no hits, return
+  if(length(tokens_filter) == 0) return(rep('', nrow(tokens)))
+
   ## filter tokens, and use an index column to keep the original row location in tokenlist (so it can be returned in this position without having to match values)
   tokens$i = 1:nrow(tokens)
-  ftokens = tokens[tokens_filter, c('i', 'doc_id', 'position', text_var)]
+  ftokens = tokens[tokens_filter, c('i', 'doc_id', 'position', text_var),drop=F]
   indicator_filter = indicator_filter[tokens_filter] ## the indicator filter needs to match the filtered tokens list
 
   ## create matrix where rows are tokens, columns are the query terms, and cells indicate whether the query terms occur (within the given word distance) at the place of each token.
