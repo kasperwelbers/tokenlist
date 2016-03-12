@@ -115,6 +115,7 @@ codeTokens <- function(tokens, queries, text_var='word', default.window=25, indi
     }
 
     ## if condition_once is TRUE, then all indicators hits are also coded if the indicator satisfies its condition at least once within the article
+    #### !!!!!!!!!!!!! voorrang aan WEL conditie
     if(condition_once){
       article_with_code = unique(ftokens$doc_id[ftokens$code == code]) # articles in which indicator satisfies condition at least once
       hit_and_articlecondition = ftokens$doc_id[ind_hit] %in% article_with_code # for all indicator hits, check whether they occur in one of these articles.
@@ -126,48 +127,6 @@ codeTokens <- function(tokens, queries, text_var='word', default.window=25, indi
   tokens$code
 }
 
-#' Get keyword-in-context from a token list
-#'
-#' @param tokens a data frame of tokens containing columns for document id (doc_id), text position (position) and text string (column name can be specified in text_var, defaults to 'word').
-#' @param nwords the number of words in front and after the keyword
-#' @param hits
-#' @param prettypaste
-#' @param text_var a character string giving the name of the term string column
-#'
-#' @return A data.frame with the keyword in context
-#' @export
-kwic <- function(tokens, hits, nwords=10, text_var='word', prettypaste=T){
-  token_i = tokenLookup(tokens, hits$doc_id, hits$position)
-
-  kwicldply <- function(i, doc_ids, words, nwords){
-    doc_id = doc_ids[i]
-    sent_i = (i-nwords):(i+nwords)
-    sent = as.character(words[sent_i])
-    sent = gsub('\\[|\\]', '', sent)
-
-    sent[nwords+1] = sprintf('[%s]', sent[nwords+1])
-    sent = sent[doc_ids[sent_i] == doc_id] # only show context words if they occur in the same article
-    data.frame(doc_id=doc_id, kwic=paste(sent, collapse=' '))
-  }
-  o = ldply(token_i, kwicldply, doc_ids=tokens$doc_id, words=tokens[,text_var], nwords=nwords)
-
-  if(prettypaste) {
-    o$kwic = gsub('_', ' ', o$kwic)
-    o$kwic = gsub('  ', ' ', o$kwic)
-    o$kwic = gsub(" ([.,?!:;>)])", '\\1', o$kwic)
-    o$kwic = gsub('([(<]) ', '\\1', o$kwic)
-    o$kwic = sprintf('...%s...', o$kwic)
-  }
-  o$kwic
-}
-
-tokenLookup <- function(tokens, doc_id, position){
-  tokens$i = 1:nrow(tokens)
-  tokens = tokens[tokens$doc_id %in% unique(doc_id), c('i', 'doc_id', 'position')]
-  which.sub = match(paste(doc_id, position, sep='___'),
-                    paste(tokens$doc_id, tokens$position, sep='___'))
-  tokens$i[which.sub]
-}
 
 #' Search for tokens in a tokenlist using indicators with conditions
 #'
