@@ -65,7 +65,7 @@ codeTokens <- function(tokens, queries, text_var='word', default.window=25, indi
   con = parseQueries(queries$condition)
 
   ## get regular expressions for each term in the queries
-  indr = getTermRegex(queries$indicator, 1) # for indicators the window should always be 1 (the exact location of the indicator)
+  indr = getTermRegex(queries$indicator, 0) # for indicators the window should always be 1 (the exact location of the indicator)
   conr = getTermRegex(queries$condition, default.window)
   query_regex = unique(rbind(indr, conr))
 

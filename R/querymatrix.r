@@ -14,6 +14,7 @@
 getQueryMatrix <- function(tokens, query_regex, text_var='word', presorted=F, default.window=25){
   if(!'window' %in% colnames(query_regex)) query_regex$window = default.window
   query_regex$window[is.na(query_regex$window)] = default.window
+  query_regex$window = query_regex$window + 1 # Plus 1, because in the location matrix 1 indicates no distance (because zero already indicates no presence [because this keeps the matrix sparse])
 
   if(!presorted){
     ## unless explicitly noted that the token list is sorted, first sort tokens by article id and word id. (keeps order to restore original order)
