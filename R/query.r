@@ -34,7 +34,10 @@ getTermRegex <- function(terms, default.window=50){
   terms = unlist(terms[,2])
   terms = data.frame(term = terms,
                      regex = gsub('~.*', '', terms),
-                     window = as.numeric(ifelse(grepl('~', terms) == T, gsub('.*~', '', terms), default.window)))
+                     window = ifelse(grepl('~', terms) == T, gsub('.*~', '', terms), default.window))
+  terms$window[terms$window == 'd'] = NA
+  terms$window = as.numeric(terms$window)
+
   terms$regex = gsub('*', '.*', terms$regex, fixed=T) # wildcard: none or any symbols
   terms$regex = gsub('?', '.{1}', terms$regex, fixed=T) # wildcard: one character that can be anything
   terms$regex = sprintf('\\b%s\\b', terms$regex)
@@ -87,6 +90,7 @@ codeTokens <- function(tokens, queries, text_var='word', default.window=25, indi
 
   ## create matrix where rows are tokens, columns are the query terms, and cells indicate whether the query terms occur (within the given word distance) at the place of each token.
   qm = getQueryMatrix(ftokens, query_regex, text_var, presorted)
+
 
   ## evaluate queries
   nqueries = nrow(queries)
