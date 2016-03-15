@@ -77,7 +77,7 @@ locationMatrix <- function(i, j, shifts=0, count.once=T, distance.as.value=F){
 #'
 #' @return a sparse matrix
 #' @export
-getQueryMatrix <- function(tokens, query_regex, text_var='word', presorted=F, default.window=25){
+getQueryMatrix <- function(tokens, query_regex, text_var='word', presorted=F, default.window=NA){
   if(!'window' %in% colnames(query_regex)) query_regex$window = default.window
   print(query_regex)
   if(!presorted){

@@ -29,7 +29,7 @@ evalQueryMatrix <- function(qm, terms, form){
   apply(qm[,terms, drop=F], MARGIN = 1, evalQuery, query_form=form)
 }
 
-getTermRegex <- function(terms, default.window=50){
+getTermRegex <- function(terms, default.window=NA){
   terms = parseQueries(terms)
   terms = unlist(terms[,2])
   terms = data.frame(term = terms,
@@ -58,7 +58,7 @@ getTermRegex <- function(terms, default.window=50){
 #'
 #' @return the annotated tokens data frame
 #' @export
-codeTokens <- function(tokens, queries, text_var='word', default.window=25, indicator_filter=rep(T, nrow(tokens)), condition_once=FALSE, presorted=F){
+codeTokens <- function(tokens, queries, text_var='word', default.window=NA, indicator_filter=rep(T, nrow(tokens)), condition_once=FALSE, presorted=F){
   ## consider underscores as wordboundaries (important for some parsers that chunk words together, separated by underscores)
   if(!class(tokens[,text_var]) == 'factor') as.factor(tokens[,text_var])
   levels(tokens[,text_var]) = gsub('_', ' ', levels(tokens[,text_var]), fixed=T)
@@ -151,7 +151,7 @@ codeTokens <- function(tokens, queries, text_var='word', default.window=25, indi
 #'
 #' @return the tokens that match the query
 #' @export
-searchQuery <- function(tokens, indicator, condition='', text_var='word', default.window=25, condition_once=FALSE, presorted=T, indicator_filter=rep(T, nrow(tokens)), hitcount=T, tokenfreq=F, keywordIC=F, ...){
+searchQuery <- function(tokens, indicator, condition='', text_var='word', default.window=NA, condition_once=FALSE, presorted=T, indicator_filter=rep(T, nrow(tokens)), hitcount=T, tokenfreq=F, keywordIC=F, ...){
   tokens$code = NULL
   query = data.frame(code=1, indicator=indicator, condition=condition)
   code = codeTokens(tokens, query, text_var, indicator_filter=indicator_filter, condition_once=condition_once, presorted=presorted, default.window = default.window)
