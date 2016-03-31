@@ -5,7 +5,7 @@
 \title{Search for tokens in a tokenlist using indicators with conditions}
 \usage{
 searchQuery(tokens, indicator, condition = "", text_var = "word",
-  default.window = 25, condition_once = FALSE, presorted = T,
+  default.window = NA, condition_once = FALSE, presorted = T,
   indicator_filter = rep(T, nrow(tokens)), hitcount = T, tokenfreq = F,
   keywordIC = F, ...)
 }

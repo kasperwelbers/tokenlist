@@ -79,7 +79,7 @@ locationMatrix <- function(i, j, shifts=0, count.once=T, distance.as.value=F){
 #' @export
 getQueryMatrix <- function(tokens, query_regex, text_var='word', presorted=F, default.window=NA){
   if(!'window' %in% colnames(query_regex)) query_regex$window = default.window
-  print(query_regex)
+
   if(!presorted){
     ## unless explicitly noted that the token list is sorted, first sort tokens by document id and word id. (keeps order to restore original order)
     ord = order(tokens$doc_id, tokens$position)

@@ -4,7 +4,7 @@
 \alias{codeTokens}
 \title{Annotate a data frame of tokens with codes using Lucene-like search queries}
 \usage{
-codeTokens(tokens, queries, text_var = "word", default.window = 25,
+codeTokens(tokens, queries, text_var = "word", default.window = NA,
   indicator_filter = rep(T, nrow(tokens)), condition_once = FALSE,
   presorted = F)
 }

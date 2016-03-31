@@ -14,12 +14,13 @@
 #' @export
 reportSummary <- function(tokens, hits, hitcount=T, tokenfreq=T, keywordIC=T, kwic_nwords=10, kwic_sample=10, random_sample=T, text_var='word'){
   ## report number of hits and articles
-  if(hitcount) reportHitcount(tokens, hits)
+  if(hitcount) message(reportHitcount(tokens, hits))
 
   ## report token frequency
   if(tokenfreq & nrow(hits) > 0) {
     cat('\n')
-    reportTokenFreq(hits, text_var)
+    tokenfreq = reportTokenFreq(hits, text_var)
+    print(tokenfreq, row.names=F)
   }
 
   ## report keywords in context
@@ -38,9 +39,9 @@ reportSummary <- function(tokens, hits, hitcount=T, tokenfreq=T, keywordIC=T, kw
 reportHitcount <- function(tokens, hits){
   nhits = nrow(hits)
   narts = length(unique(hits$doc_id))
-  message(sprintf('%s hit%s in %s article%s (N = %s)', nhits, ifelse(nhits==1, '', 's'),
+  sprintf('%s hit%s in %s article%s (N = %s)', nhits, ifelse(nhits==1, '', 's'),
                   narts, ifelse(narts==1, '', 's'),
-                  length(unique(tokens$doc_id))))
+                  length(unique(tokens$doc_id)))
 }
 
 #' Title
@@ -51,7 +52,7 @@ reportHitcount <- function(tokens, hits){
 #' @export
 reportTokenFreq <- function(hits, text_var='word'){
   termfreq = aggregate(list(hits=hits$doc_id), by=list(token=as.character(hits[,text_var])), FUN='length')
-  print(termfreq, row.names=F)
+  termfreq
 }
 
 #' Title
@@ -69,7 +70,7 @@ reportKWIC <- function(tokens, hits, nwords=10, nsample=10, random_sample=T, tex
     if(random_sample) hits = hits[sample(1:nrow(hits), nrow(hits)),]
     hits = head(hits, nsample)
   }
-  hits$kwic = kwic(tokens, hits, nwords = nwords)
+  hits$kwic = getKwic(tokens, hits, nwords = nwords)
 
   for(doc_id in unique(hits$doc_id)){
     #cat('###################')
@@ -130,10 +131,51 @@ compareHits <- function(tokens, hits.x, hits.y){
 #' @param ...
 #'
 #' @export
-reportXandY <- function(tokens, hits.x, hits.y, ...){
+XandY <- function(hits.x, hits.y){
   id.x = paste(hits.x$doc_id, hits.x$position, sep='---')
   id.y = paste(hits.y$doc_id, hits.y$position, sep='---')
-  reportSummary(tokens, hits.x[id.x %in% id.y,], ...)
+  hits.x[id.x %in% id.y,]
+}
+
+#' Title
+#'
+#' @param tokens
+#' @param hits.x
+#' @param hits.y
+#' @param ...
+#'
+#' @export
+XnotY <- function(hits.x, hits.y){
+  id.x = paste(hits.x$doc_id, hits.x$position, sep='---')
+  id.y = paste(hits.y$doc_id, hits.y$position, sep='---')
+  hits.x[!id.x %in% id.y,]
+}
+
+#' Title
+#'
+#' @param tokens
+#' @param hits.x
+#' @param hits.y
+#' @param ...
+#'
+#' @export
+YnotX <- function(hits.x, hits.y){
+  id.x = paste(hits.x$doc_id, hits.x$position, sep='---')
+  id.y = paste(hits.y$doc_id, hits.y$position, sep='---')
+  hits.y[!id.y %in% id.x,]
+}
+
+
+#' Title
+#'
+#' @param tokens
+#' @param hits.x
+#' @param hits.y
+#' @param ...
+#'
+#' @export
+reportXandY <- function(tokens, hits.x, hits.y, ...){
+  reportSummary(tokens, XandY(hits.x, hits.y), ...)
 }
 
 #' Title
@@ -145,9 +187,7 @@ reportXandY <- function(tokens, hits.x, hits.y, ...){
 #'
 #' @export
 reportXnotY <- function(tokens, hits.x, hits.y, ...){
-  id.x = paste(hits.x$doc_id, hits.x$position, sep='---')
-  id.y = paste(hits.y$doc_id, hits.y$position, sep='---')
-  reportSummary(tokens, hits.x[!id.x %in% id.y,], ...)
+  reportSummary(tokens, XnotY(hits.x, hits.y), ...)
 }
 
 #' Title
@@ -159,9 +199,7 @@ reportXnotY <- function(tokens, hits.x, hits.y, ...){
 #'
 #' @export
 reportYnotX <- function(tokens, hits.x, hits.y, ...){
-  id.x = paste(hits.x$doc_id, hits.x$position, sep='---')
-  id.y = paste(hits.y$doc_id, hits.y$position, sep='---')
-  reportSummary(tokens, hits.y[!id.y %in% id.x,], ...)
+  reportSummary(tokens, YnotX(hits.x, hits.y), ...)
 }
 
 
@@ -175,7 +213,10 @@ reportYnotX <- function(tokens, hits.x, hits.y, ...){
 #'
 #' @return A data.frame with the keyword in context
 #' @export
-kwic <- function(tokens, hits, nwords=10, text_var='word', prettypaste=T){
+getKwic <- function(tokens, hits, nwords=10, text_var='word', prettypaste=T){
+  ## first filter tokens on document id (to speed up computation)
+  tokens = tokens[tokens$doc_id %in% unique(hits$doc_id),]
+
   token_i = tokenLookup(tokens, hits$doc_id, hits$position)
 
   kwicldply <- function(i, doc_ids, words, nwords){
@@ -194,14 +235,16 @@ kwic <- function(tokens, hits, nwords=10, text_var='word', prettypaste=T){
   }
   o = ldply(token_i, kwicldply, doc_ids=tokens$doc_id, words=tokens[,text_var], nwords=nwords)
 
-  if(prettypaste) {
-    o$kwic = gsub('_', ' ', o$kwic)
-    o$kwic = gsub('  ', ' ', o$kwic)
-    o$kwic = gsub(" ([.,?!:;>)])", '\\1', o$kwic)
-    o$kwic = gsub('([(<]) ', '\\1', o$kwic)
-    o$kwic = sprintf('...%s...', o$kwic)
-  }
+  if(prettypaste) o$kwic = prettyKWIC(o$kwic)
   o$kwic
+}
+
+prettyKWIC <- function(x){
+  x = gsub('_', ' ', x)
+  x = gsub('  ', ' ', x)
+  x = gsub(" ([.,?!:;>)])", '\\1', x)
+  x = gsub('([(<]) ', '\\1', x)
+  x = sprintf('...%s...', x)
 }
 
 tokenLookup <- function(tokens, doc_id, position){
