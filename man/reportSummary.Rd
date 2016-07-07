@@ -4,9 +4,11 @@
 \alias{reportSummary}
 \title{Title}
 \usage{
-reportSummary(tokens, hits, hitcount = T, tokenfreq = T, keywordIC = T,
-  kwic_nwords = 10, kwic_sample = 10, random_sample = T,
-  text_var = "word")
+reportSummary(tokens, hits = NULL, token_i = NULL, hitcount = T,
+  tokenfreq = T, keywordIC = T, kwic_nwords = 10, kwic_sample = 10,
+  random_sample = T, doc.col = getOption("doc.col", "doc_id"),
+  position.col = getOption("position.col", "position"),
+  word.col = getOption("wor.col", "word"))
 }
 \arguments{
 \item{hitcount}{}

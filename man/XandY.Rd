@@ -4,7 +4,8 @@
 \alias{XandY}
 \title{Title}
 \usage{
-XandY(hits.x, hits.y)
+XandY(hits.x, hits.y, doc.col = getOption("doc.col", "doc_id"),
+  position.col = getOption("position.col", "position"))
 }
 \arguments{
 \item{...}{}

@@ -4,7 +4,8 @@
 \alias{reportHitcount}
 \title{Title}
 \usage{
-reportHitcount(tokens, hits)
+reportHitcount(tokens, hits = NULL, token_i = NULL,
+  doc.col = getOption("doc.col", "doc.id"))
 }
 \arguments{
 \item{hits}{}

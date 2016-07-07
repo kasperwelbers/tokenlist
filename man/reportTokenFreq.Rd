@@ -4,10 +4,11 @@
 \alias{reportTokenFreq}
 \title{Title}
 \usage{
-reportTokenFreq(hits, text_var = "word")
+reportTokenFreq(hits, token_i = NULL, doc.col = getOption("doc.col",
+  "doc.col"), word.col = get.Option("word", "word"))
 }
 \arguments{
-\item{text_var}{}
+\item{word.col}{}
 }
 \description{
 Title

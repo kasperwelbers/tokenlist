@@ -4,7 +4,9 @@
 \alias{getQueryMatrix}
 \title{Creates a matrix where rows match the tokens, columns represent the queries in query_regex, and values represent the word distance to each query hit}
 \usage{
-getQueryMatrix(tokens, query_regex, text_var = "word", presorted = F,
+getQueryMatrix(tokens, query_regex, doc.col = getOption("doc.col", "doc_id"),
+  position.col = getOption("position.col", "position"),
+  word.col = getOption("word.col", "word"), presorted = F,
   default.window = NA)
 }
 \arguments{

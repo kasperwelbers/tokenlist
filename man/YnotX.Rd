@@ -4,7 +4,8 @@
 \alias{YnotX}
 \title{Title}
 \usage{
-YnotX(hits.x, hits.y)
+YnotX(hits.x, hits.y, doc.col = getOption("doc.col", "doc_id"),
+  position.col = getOption("position.col", "position"))
 }
 \arguments{
 \item{...}{}

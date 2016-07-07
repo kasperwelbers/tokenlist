@@ -2,9 +2,9 @@
 % Please edit documentation in R/query.r
 \name{tokenGrepl}
 \alias{tokenGrepl}
-\title{a wrapper for grepl that takes multiple patterns. (and hopefully to optimize speed in the near future)}
+\title{A wrapper for grepl that takes multiple patterns. For efficiency, grepl is performed on unique words, and results for individual values are matched. Uses batches to go easy on memory (though sacrificing a bit of speed)}
 \usage{
-tokenGrepl(patterns, x, ignore.case = T, perl = F)
+tokenGrepl(patterns, x, ignore.case = T, perl = F, batchsize = 5)
 }
 \arguments{
 \item{perl}{}
@@ -13,6 +13,6 @@ tokenGrepl(patterns, x, ignore.case = T, perl = F)
 a logical vector
 }
 \description{
-a wrapper for grepl that takes multiple patterns. (and hopefully to optimize speed in the near future)
+A wrapper for grepl that takes multiple patterns. For efficiency, grepl is performed on unique words, and results for individual values are matched. Uses batches to go easy on memory (though sacrificing a bit of speed)
 }
 

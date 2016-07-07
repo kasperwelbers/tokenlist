@@ -55,9 +55,6 @@ locationMatrix <- function(i, j, shifts=0, count.once=T, distance.as.value=F){
     select = !duplicated(data.frame(mat@i, mat@j))
     mat = spMatrix(nrow(mat), ncol(mat), mat@i[select]+1, mat@j[select]+1, mat@x[select])
   }
-  mat
-  length(i)
-  nrow(mat)
   mat = mat[i,,drop=F]
   mat = as(mat, 'dgCMatrix')
   if(count.once) mat@x[mat@x>0] = 1
@@ -71,60 +68,63 @@ locationMatrix <- function(i, j, shifts=0, count.once=T, distance.as.value=F){
 #'
 #' @param tokens
 #' @param query_regex
-#' @param text_var
+#' @param word.col
 #' @param presorted
 #' @param default.window
 #'
 #' @return a sparse matrix
 #' @export
-getQueryMatrix <- function(tokens, query_regex, text_var='word', presorted=F, default.window=NA){
+getQueryMatrix <- function(tokens, query_regex, doc.col=getOption('doc.col','doc_id'), position.col=getOption('position.col','position'), word.col=getOption('word.col','word'), presorted=F, default.window=NA){
   if(!'window' %in% colnames(query_regex)) query_regex$window = default.window
 
   if(!presorted){
     ## unless explicitly noted that the token list is sorted, first sort tokens by document id and word id. (keeps order to restore original order)
-    ord = order(tokens$doc_id, tokens$position)
+    ord = order(tokens[,doc.col], tokens[,position.col])
     tokens = tokens[ord,]
   }
 
   ## get query matrix; separately for query terms with a given word distance and query terms at the article level
   document_level = is.na(query_regex$window) | query_regex$window == 'd'
-  qm = cbind(wordDistanceQueryMatrix(tokens, query_regex[!document_level,], text_var),
-             documentOccurenceQueryMatrix(tokens, query_regex[document_level,], text_var))
+  if(mean(document_level) == 1) qm = documentOccurenceQueryMatrix(tokens, query_regex[document_level,], doc.col, position.col, word.col)
+  if(mean(document_level) == 0) qm = wordDistanceQueryMatrix(tokens, query_regex[!document_level,], doc.col, position.col, word.col)
+  if(!mean(document_level) %in% c(0,1)) qm = cbind(wordDistanceQueryMatrix(tokens, query_regex[!document_level,], doc.col, position.col, word.col),
+                                                   documentOccurenceQueryMatrix(tokens, query_regex[document_level,], doc.col, position.col, word.col))
 
   if(!presorted) qm = qm[match(1:nrow(qm), ord),,drop=F] # return matrix in order of input tokens
   qm
 }
 
-wordDistanceQueryMatrix <- function(tokens, query_regex, text_var){
+wordDistanceQueryMatrix <- function(tokens, query_regex, doc.col, position.col, word.col){
   if(nrow(query_regex) == 0) return(NULL)
   query_regex$window = as.numeric(query_regex$window) + 1 # Plus 1, because in the window matrix 1 indicates no distance (because zero already indicates no presence [because this keeps the matrix sparse])
 
-  m = getWindowMatrix(location=tokens$position,
-                      context=tokens$doc_id,
-                      term = tokens[, text_var],
+  m = getWindowMatrix(location=tokens[,position.col],
+                      context=tokens[,doc.col],
+                      term = tokens[,word.col],
                       window.size = max(query_regex$window))
 
   ## create the rows and columns for the query matrix by looking in which rows one of the terms that matches the regex is TRUE.
   getWindowQueryHits <- function(j, query_regex, m){
     query_m = m[,tokenGrepl(query_regex$regex[j], colnames(m)),drop=F]
-    hits = Matrix::rowSums(query_m > 0 & query_m <= query_regex$window[j]) > 0 # matrix value has to be higher than 0, but not higher than the window size
+    hits = Matrix::rowSums(query_m > 0 & query_m <= query_regex$window[j]) > 0 # at least one column should have a value between 1 and its window size
     if(sum(hits) == 0) return(NULL)
     data.frame(i = which(hits), j = j)
   }
-  qm = ldply(1:nrow(query_regex), getWindowQueryHits, query_regex=query_regex, m=m)
 
+
+  qm = ldply(1:nrow(query_regex), getWindowQueryHits, query_regex=query_regex, m=m)
   qm = spMatrix(nrow(tokens), nrow(query_regex), qm$i, qm$j, rep(T, nrow(qm)))
   colnames(qm) = query_regex$term
   qm
 }
 
-documentOccurenceQueryMatrix <- function(tokens, query_regex, text_var){
+documentOccurenceQueryMatrix <- function(tokens, query_regex, doc.col, position.col, word.col){
   if(nrow(query_regex) == 0) return(NULL)
 
-  udoc = unique(tokens$doc_id)
-  uterm = unique(tokens[,text_var])
-  doc_i = match(tokens$doc_id, udoc)
-  term_i = match(tokens[,text_var], uterm)
+  udoc = unique(tokens[,doc.col])
+  uterm = unique(tokens[,word.col])
+  doc_i = match(tokens[,doc.col], udoc)
+  term_i = match(tokens[,word.col], uterm)
   m = spMatrix(length(udoc), length(uterm), doc_i, term_i, rep(1,nrow(tokens)))
   colnames(m) = uterm
 

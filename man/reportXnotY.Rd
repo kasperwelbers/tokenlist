@@ -4,7 +4,9 @@
 \alias{reportXnotY}
 \title{Title}
 \usage{
-reportXnotY(tokens, hits.x, hits.y, ...)
+reportXnotY(tokens, hits.x, hits.y, doc.col = getOption("doc.col", "doc_id"),
+  position.col = getOption("position.col", "position"),
+  word.col = getOption("wor.col", "word"), ...)
 }
 \arguments{
 \item{...}{}

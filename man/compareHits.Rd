@@ -4,7 +4,7 @@
 \alias{compareHits}
 \title{Title}
 \usage{
-compareHits(tokens, hits.x, hits.y)
+compareHits(tokens, hits.x, hits.y, doc.col, position.col)
 }
 \arguments{
 \item{hits.y}{}

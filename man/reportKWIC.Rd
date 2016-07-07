@@ -4,11 +4,13 @@
 \alias{reportKWIC}
 \title{Title}
 \usage{
-reportKWIC(tokens, hits, nwords = 10, nsample = 10, random_sample = T,
-  text_var = "word")
+reportKWIC(tokens, hits = NULL, token_i = NULL, nwords = 10,
+  nsample = 10, random_sample = T, doc.col = getOption("doc.col",
+  "doc_id"), position.col = getOption("position.col", "position"),
+  word.col = getOption("wor.col", "word"))
 }
 \arguments{
-\item{text_var}{}
+\item{word.col}{}
 }
 \description{
 Title
