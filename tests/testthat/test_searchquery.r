@@ -1,9 +1,10 @@
-test_that("extracting clauses works", {
+test_that("Query search works", {
   tokens = data.frame(doc_id = c(1,1,1,1,1,1,1,1,2,2,2,2,2,3,3,3,3),
                       position = c(1,2,3,4,5,6,7,8,1,2,3,4,5,1,2,3,4),
                       word = c('Renewable','fuel','is','better','than','fossil', 'fuels', '!',
                                'A', 'fueled', 'debate', 'about', 'fuel',
                                'Mark_Rutte', 'is', 'simply', 'Rutte'))
+  setTokenlistColnames()
 
   ## simple indicator only
   hits = searchQuery(tokens, indicator = 'fuel')
@@ -37,4 +38,12 @@ test_that("extracting clauses works", {
                        condition = c('renewable green clean', 'mark~2', ''))
   hits = searchQueries(tokens, queries, condition_once=c(F,T,F))
   expect_equal(as.character(hits$word), c('fuel','fuels','Mark Rutte', 'Rutte', 'debate'))
+
+  ## batchsize = 1
+  hits = searchQueries(tokens, queries, condition_once=c(F,T,F), batchsize=1)
+  expect_equal(as.character(hits$word), c('fuel','fuels','Mark Rutte', 'Rutte', 'debate'))
+
+  ## code queries
+  code = codeQueries(tokens, queries, condition_once=c(F,T,F))
+  expect_equal(as.numeric(table(code)), c(12,1,2,2))
 })

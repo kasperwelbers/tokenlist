@@ -7,7 +7,7 @@
 getQueryMatrix(tokens, query_regex, doc.col = getOption("doc.col", "doc_id"),
   position.col = getOption("position.col", "position"),
   word.col = getOption("word.col", "word"), presorted = F,
-  default.window = NA)
+  default.window = NA, return_i = NULL)
 }
 \arguments{
 \item{default.window}{}

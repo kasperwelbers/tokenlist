@@ -11,19 +11,21 @@ setTokenlistColnames <- function(doc.col='doc_id', position.col='position', word
 }
 
 parseQueries <- function(query){
+  query = iconv(query, to='ASCII//TRANSLIT') # if present, try to remove accented characters
+
   query = gsub(' OR ', ' | ', query)
   query = gsub(' AND ', ' & ', query)
   query = gsub(' NOT ', ' &! ', query)
 
   ## also allow empty space as OR
-  query = gsub('(?<=[*?a-zA-Z0-9)])[ ]+(?=[*?a-zA-Z0-9(])', ' | ', query, perl=T)
+  query = gsub('(?<=[+*?.a-zA-Z0-9/~_)-])[ ]+(?=[+*?.a-zA-Z0-9/~_(-])', ' | ', query, perl=T)
 
   ## make " * ", as a 'find all' solution, an immediate TRUE
   query = tolower(query) # safety first: for the odd possibility that someone uses T or F as a query term, which would be interpreted as TRUE or FALSE
   query = gsub('(?<= )\\*(?= )|(?<=^)\\*(?= )', 'T', query, perl=T)
 
-  query_form = as.list(gsub('([*?a-z0-9/~_-]+)', '%s', query)) # note that uppercase is not replaced, to keep the TRUE
-  query_terms = regmatches(query, gregexpr('([*?a-z0-9/~_-]+)', query))
+  query_form = as.list(gsub('([+*?.a-z0-9/~_-]+)', '%s', query)) # note that uppercase is not replaced, to keep the TRUE
+  query_terms = regmatches(query, gregexpr('([+*?.a-z0-9/~_-]+)', query))
 
   query_form[query_form == ''] = NA
   t(mapply(function(x,y) list(form=x, terms=y), query_form, query_terms))
@@ -45,6 +47,7 @@ evalQueryMatrix <- function(qm, terms, form){
   urowid = rowid[isunique]
   uqm = qm[isunique,,drop=F]
 
+  #apply(qm[,terms, drop=F], 1, evalQuery, query_form=form) ## old solution, without accounting for duplicates. Still have to check whether new solution is actually better
   res = apply(uqm[,terms, drop=F], 1, evalQuery, query_form=form)
   res[match(rowid, urowid)]
 }
@@ -63,6 +66,8 @@ getTermRegex <- function(terms, default.window=NA){
   terms$window[terms$window == 'd'] = NA
   terms$window = as.numeric(as.character(terms$window))
 
+  terms$regex = gsub('([.+])', '\\\\\\1', terms$regex) ## escape special regex characters
+
   terms$regex = gsub('*', '.*', terms$regex, fixed=T) # wildcard: none or any symbols
   terms$regex = gsub('?', '.{1}', terms$regex, fixed=T) # wildcard: one character that can be anything
   terms$regex = sprintf('\\b%s\\b', terms$regex)
@@ -78,6 +83,7 @@ qualifyQueries <- function(queries){
   if(length(boo) > 0) stop(paste(boo, collapse='\n'))
 }
 
+
 #' A wrapper for grepl that takes multiple patterns. For efficiency, grepl is performed on unique words, and results for individual values are matched. Uses batches to go easy on memory (though sacrificing a bit of speed)
 #'
 #' @param patterns
@@ -87,7 +93,7 @@ qualifyQueries <- function(queries){
 #'
 #' @return a logical vector
 #' @export
-tokenGrepl <- function(patterns, x, ignore.case=T, perl=F, batchsize=5){
+tokenGrepl <- function(patterns, x, ignore.case=T, perl=F, batchsize=25, useBytes=T){
   ## make batches of terms and turn each batch into a single regex
   patterns = split(patterns, ceiling(seq_along(patterns)/batchsize))
   patterns = sapply(patterns, paste, collapse='|')
@@ -96,12 +102,44 @@ tokenGrepl <- function(patterns, x, ignore.case=T, perl=F, batchsize=5){
   ux = unique(x)
   out = rep(F, length(ux))
   for(pattern in patterns){
-    out = out | grepl(pattern, ux, ignore.case=ignore.case, perl=perl)
+    out = out | grepl(pattern, ux, ignore.case=ignore.case, perl=perl, useBytes=useBytes)
   }
 
   ## return result for each x
-  out[match(x, ux)]
+  #out[match(x, ux)]
+  x %in% ux[out]
 }
+
+
+#' Report number of unique terms that matches each query
+#'
+#' This function is usefull to test whether certain queries match a high number of unique terms, thus possibly causing memory issues.
+#'
+#' @param terms a character vector of (unique) terms
+#' @param queries a dataframe with queries as used in the searchQueries en codeQueries functions.
+#'
+#' @export
+queryTermMatches <- function(terms, queries){
+  uterms = unique(terms)
+  queries$nterms = NA
+  for(i in 1:nrow(queries)){
+    regterms = unique(c(getTermRegex(queries$indicator[i])$regex, getTermRegex(queries$condition[i])$regex))
+    queries$nterms[i] = sum(tokenGrepl(regterms, uterms))
+  }
+  queries$nterms
+}
+
+
+#smartBatch <- function(queries, max_bsize=50){
+#  qterms = parseQueries(queries$condition)[,2]
+#  qterms = data.frame(code = rep(queries$code, sapply(qterms, length)),
+#                       term = unlist(qterms))
+#  ucodes = unique(queries$code)
+#  uterms = unique(qterms$term)
+#  qtm = spMatrix(length(uterms), length(ucodes), match(qterms$term, uterms), match(qterms$code, ucodes), rep(1, nrow(qterms)))
+#  dimnames(qtm) = list(uterms, ucodes)
+#
+#  crossprod(qtm)
 
 #' Find tokens using a Lucene-like search query
 #'
@@ -139,7 +177,11 @@ searchQuery <- function(tokens, indicator, condition='', code='', doc.col=getOpt
 #' @return the annotated tokens data frame
 #' @export
 searchQueries <- function(tokens, queries, doc.col=getOption('doc.col','doc_id'), position.col=getOption('position.col','position'), word.col=getOption('word.col','word'), batchsize=5, default.window=NA, condition_once=FALSE, indicator_filter=rep(T, nrow(tokens)), presorted=F, verbose=T){
+  queries = queries[!queries$indicator == '',]
   qualifyQueries(queries)
+
+  if(!'condition_once' %in% colnames(queries)) queries$condition_once = condition_once
+  if(!'default.window' %in% colnames(queries)) queries$default.window = default.window
   tokens$i = 1:nrow(tokens) # add row indices as vector to recall after filtering and sorting
 
   ## sort beforehand and set presorted to true (so that tokens will not be sorted for each batch)
@@ -154,24 +196,30 @@ searchQueries <- function(tokens, queries, doc.col=getOption('doc.col','doc_id')
 
 
   if(is.na(batchsize)){
-    out = searchQueriesBatch(tokens, queries, doc.col, position.col, word.col, default.window, condition_once, presorted, indicator_filter)
+    out = searchQueriesBatch(tokens, queries, doc.col, position.col, word.col, presorted, indicator_filter)
   } else {
     out = list()
+
     query_i = 1:nrow(queries)
     batches = split(query_i, ceiling(seq_along(query_i)/batchsize))
+
     for(i in 1:length(batches)){
-      if(verbose) message('\t', 'batch ', i, ': ', (i-1)*batchsize, ' / ', nrow(queries))
-      out[['']] = searchQueriesBatch(tokens, queries[batches[[i]],,drop=F], doc.col, position.col, word.col, default.window, condition_once, presorted, indicator_filter)
+      if(verbose) message('\t', min(batches[[i]]), ' / ', nrow(queries))
+      batch = searchQueriesBatch(tokens, queries[batches[[i]],,drop=F], doc.col, position.col, word.col, presorted, indicator_filter)
+      if(!is.null(batch)) out[['']] = batch
     }
   }
   rbind.fill(out)
 }
 
-searchQueriesBatch <- function(tokens, queries, doc.col, position.col, word.col, default.window, condition_once, presorted, indicator_filter){
-  tokens$ind_filter = indicator_filter
+emptyHitsDf <- function(doc.col, position.col, word.col){
+  d = data.frame(i=numeric(0), doc_id=numeric(0), position.col=numeric(0), code=character(0), word=character(0))
+  colnames(d) = c('i', doc.col, position.col, 'code', word.col)
+  d
+}
 
-  if(!'condition_once' %in% colnames(queries)) queries$condition_once = condition_once
-  if(!'default.window' %in% colnames(queries)) queries$default.window = default.window
+searchQueriesBatch <- function(tokens, queries, doc.col, position.col, word.col, presorted, indicator_filter){
+  tokens$ind_filter = indicator_filter
 
   ind = parseQueries(queries$indicator)
   indr = getTermRegex(queries$indicator, queries$default.window)
@@ -185,15 +233,18 @@ searchQueriesBatch <- function(tokens, queries, doc.col, position.col, word.col,
   article_filter = unique(tokens[tokens$ind_hit, doc.col])
   tokens = tokens[tokens[,doc.col] %in% article_filter,]
   ## and look only at tokens that are indicators or condition terms
-  tokens_filter = tokens$ind_hit | tokenGrepl(conr$regex, tokens[,word.col])
+  tokens$is_cond_term = tokenGrepl(conr$regex, tokens[,word.col])
+  tokens_filter = tokens$ind_hit | tokens$is_cond_term
   tokens = tokens[tokens_filter,]
 
-  if(nrow(tokens) == 0) return(NULL)
+  if(nrow(tokens) == 0) return(emptyHitsDf(doc.col,position.col,word.col))
 
   ## create matrix where rows are tokens, columns are the query terms, and cells indicate whether the query terms occur (within the given word distance) at the place of each token.
   ## creating the query matrix can (and should) be skipped if no conditions are given
   if(nrow(conr) > 0){
-    qm = getQueryMatrix(tokens, conr, doc.col, position.col, word.col, presorted, default.window)
+    tokens$cond_term = ifelse(tokens$is_cond_term, tokens[,word.col], NA) ## when making the query matrix, its more memory efficient to use a single column for all indicator terms (that are not condition terms). Note that this indicator column is necessary because we need to know where the indicators are in the query matrix
+    qm = getQueryMatrix(tokens, conr, doc.col, position.col, word.col, presorted, default.window, return_i=tokens$ind_hit)
+    tokens = tokens[tokens$ind_hit,,drop=F]
   }
 
   #### then evaluate each query individually
@@ -224,6 +275,8 @@ searchQueriesBatch <- function(tokens, queries, doc.col, position.col, word.col,
     }
     if(sum(tokens$hit_and_condition) > 0) {
       result_i[['']] = tokens[tokens$hit_and_condition, c('i',doc.col,position.col,'code',word.col)]
+    } else {
+      result_i[['']] = emptyHitsDf(doc.col,position.col,word.col)
     }
   }
   unique(rbind.fill(result_i))
@@ -245,11 +298,16 @@ searchQueriesBatch <- function(tokens, queries, doc.col, position.col, word.col,
 codeQueries <- function(tokens, queries, doc.col=getOption('doc.col','doc_id'), position.col=getOption('position.col','position'), word.col=getOption('word.col','word'), batchsize=5, default.window=NA, condition_once=FALSE, indicator_filter=rep(T, nrow(tokens)), presorted=F, verbose=T){
   hits = searchQueries(tokens, queries, doc.col, position.col, word.col, batchsize, default.window, condition_once, indicator_filter, presorted, verbose)
 
+  tokens$code = ''
+  if(nrow(hits) == 0) return(as.factor(tokens$code))
+
   ## if a token has multiple codes, only use the last one (this way, if queries has a top-down hierarchical structure, the most specific coding will be used)
-  hits = hits[rev(1:nrow(hits)),]
+  ## to do so, hits are first ordered according to the reversed order of the queries dataframe, and then duplicate rowindices (i) are deleted
+  #hits = hits[rev(1:nrow(hits)),]
+  hits$queryorder = match(hits$code, tokens$code)
+  hits = hits[order(-hits$queryorder),]
   hits = hits[!duplicated(hits$i),]
 
-  tokens$code = ''
   tokens$code[hits$i] = as.character(hits$code)
   as.factor(tokens$code)
 }

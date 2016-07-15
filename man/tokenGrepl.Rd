@@ -4,7 +4,8 @@
 \alias{tokenGrepl}
 \title{A wrapper for grepl that takes multiple patterns. For efficiency, grepl is performed on unique words, and results for individual values are matched. Uses batches to go easy on memory (though sacrificing a bit of speed)}
 \usage{
-tokenGrepl(patterns, x, ignore.case = T, perl = F, batchsize = 5)
+tokenGrepl(patterns, x, ignore.case = T, perl = F, batchsize = 25,
+  useBytes = T)
 }
 \arguments{
 \item{perl}{}
